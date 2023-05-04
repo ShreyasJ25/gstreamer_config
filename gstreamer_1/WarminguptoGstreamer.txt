@@ -1,0 +1,54 @@
+﻿What is Gstreamer?
+
+
+GStreamer is an open-source multimedia framework mainly used to create media applications (streaming, media playback, non-linear editing, etc.). The GStreamer framework is designed to make writing applications that handle audio or video easy. It uses plugins that will provide various codecs and other functionalities.
+
+
+How  to install Gstreamer?
+link1:https://gstreamer.freedesktop.org/documentation/installing/on-linux.html?gi-language=c
+The above link would be good enough for getting started on the linux and debian system.
+
+
+To download fully fledged Gstreamer on RPi4 with buster(10) or bullseye(11) follow the 
+Link 2: https://qengineering.eu/install-gstreamer-1.18-on-raspberry-pi-4.html
+Download the ‘Plugins-ugly’ ,’Plugins-good’ and other plugins to stream from RPi4.
+
+
+Commands of Gstreamer?
+refer 'learing_gstreamer'
+
+
+
+
+omxh264enc    v/s     x264enc:
+The former uses the hardware accelerator built into RPi and the load on CPU reduces drastically . While the latter is a software encoder ,hence higher CPU utilization.
+
+
+Note: Keep the aspect ratio of the video to 16:9 for the    “ pi-ir cut(b) “ (i.e  1280p * 720 p) . Keeping the ratio  4:3 (like 640p*480p) for the same camera sensor drastically increases the CPU utilization.
+
+
+Note:Download   ‘gi’  library to use gstreamer in python scripts.
+
+
+https://gitlab.com/jivan-spark/cctv-camera/-/tree/shreyas/gstreamer
+
+
+Refer the above link to know about the python scripts used in gstreamer
+
+
+>>'learning_gstreamer': gives a list of gstremer terminal commands
+>>'delete_old.py' :python script to delete a old files in a particular folder
+>>'gstreamer_sending.py': python script to send data over rtp protocol ,it uses 'Gst' library to execute the gstreamer functions
+>>'gstreamer_receiving.py': Inverse function of 'gstreamer_sending',alike the 'gstreamer_sending' Gst library is used
+>>'gstreamer_saving.py': script to save the video captured locally ,using both cv2.writer functonality and Gst library
+>>'gstreamer_seperate_udp_saving.py': there are two pipelines which are being used here,one for sending over udp and other for saving,inefficient
+>>'gstreamer_rtmp_commandline.py': calls terminal command inside script to send data over rtmp protocol to rtmp sink which contains application name and strem name as well as saves the file locally
+>>'gstreamer_rtp_commandline.py': calls terminal command inside script to send data over rtp protocol to udp sink as well as saves the file locally
+>>'delete_upload.py': a script to call  that uploads the video file to GCP buckets and after that deletes it. IT uses 'service_account_gcp.json' for authentication
+>>'service_account_gcp.json' : ajson file for authentication , to access GCP buckets. It can be obtained from GCP .
+>>'stream_upload.py' : ascript that combines the functionaltiy of 'gstreamer_rtmp_commandline.py'  and 'delete_upload.py'
+>>'requirements.txt' :if u don't know what this file is for,better quit implementing 'Gstreamer'
+
+
+
+

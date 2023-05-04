@@ -1,0 +1,125 @@
+ discoverer                                                          discoverer:
+ 1)>>gst-discoverer-1.0 James_small.mp4 
+ 
+This shows the properties of the file
+
+
+launch:
+ 2)>>gst-launch-1.0 -v filesrc location=/home/pi/software/testcamera/James_small.mp4 ! queue ! qtdemux name=demuxer demuxer.video_0 ! queue ! decodebin ! videoconvert ! autovideosink demuxer.audio_0 ! queue ! decodebin ! audioconvert ! autoaudiosink
+ 
+This intializes a pipeline in gstreamer
+ 	
+ 	
+3)>>gst-launch-1.0 audiotestsrc ! audioconvert ! autoaudiosink videotestsrc! videoconvert! autovideosink
+        
+        Here if "!" is not present that means that they are not connected
+	
+4)>>	gst-launch-1.0 -v filesrc location=/home/pi/software/testcamera/James_small.mp4 ! queue ! qtdemux name=demuxer demuxer.video_0 ! queue ! h264parse ! omxh264dec  ! omxh264enc ! "video/x-h264,profile=high" ! matroskamux ! filesink location= /home/pi/software/testcamera/bunny720.mkv 
+
+5) >>	gst-launch-1.0 -v videotestsrc ! video/x-raw,width=1920 ! videoconvert ! autovideosink
+	
+
+6)>>	gst-launch-1.0 audiotestsrc ! audioconvert ! autoaudiosink audiotestsrc wave=pink-noise ! spacescope ! videoconvert! autovideosink
+
+
+inspecting: 
+	>>gst-inspect-1.0
+	 this shows all the elements installed
+	
+	>>gst-inspect-1.0 | grep omx
+	>>gst-inspect-1.0 omx
+	>>gst-inspect-1.0 |grep scope
+
+typefinder:
+	>>gst-typefind-1.0 James_small.mp4
+
+
+
+7)>>gst-launch-1.0 -v filesrc location=/home/pi/software/testcamera/James_small.mp4 ! queue ! qtdemux name=demuxer demuxer.video_0 ! queue ! h264parse ! omxh264dec ! videoscale ! video/x-raw-yuv,width=640,height=340 ! omxh264enc ! "video/x-h264,profile=high" ! matroskamux ! filesink location= /home/pi/software/testcamera/bunny720.mkv 
+ 
+  The above command converts the mp4 to mkv format
+ 
+
+udpsending:
+ 8)>>gst-launch-1.0 -e -v v4l2src device=/dev/video0 do-timestamp=1  ! 
+    video/x-raw, width=352, height=288, framerate=25/1 ! videoconvert ! x264enc pass=qual  quantizer=20 tune=zerolatency insert-vui=1 key-int-max=16 ! h264parse ! rtph264pay ! udpsink host=127.0.0.1  port=5000 -ev
+
+The above command accesses the default camera 
+
+udpreceving:
+   9)      >>	gst-launch-1.0 udpsrc address=127.0.0.1  port=5000 
+	! application/x-rtp,media=video,encoding-name=H264,clock-rate=90000 
+     ! rtpjitterbuffer latency=300 ! rtph264depay ! h264parse ! avdec_h264 ! videoconvert !     autovideosink -v
+
+using omxh264: 
+
+ udpsending :
+    10) >>gst-launch-1.0 -e -v v4l2src device=/dev/video0 do-timestamp=1 
+ ! video/x-raw, width=352, height=288, framerate=25/1 ! videoconvert ! omxh264enc  
+! h264parse ! rtph264pay ! udpsink host=127.0.0.1  port=5000 -ev
+  
+   
+Note:
+// if e is not included in above  the video saved wouldnt be playable
+
+
+
+udpreceving:
+11)  >>gst-launch-1.0 udpsrc address=127.0.0.1  port=5000 
+	! application/x-rtp,media=video,encoding-name=H264,clock-rate=90000 
+	! rtpjitterbuffer latency=300 ! rtph264depay ! h264parse ! avdec_h264 ! videoconvert ! autovideosink -v
+
+
+udpsending and saving:
+
+12)  >> gst-launch-1.0 -e   v4l2src device=/dev/video0 ! videoconvert ! \
+video/x-raw, format=YUY2, width=1280,height=720,framerate=30/1  ! videoconvert \
+! videorate ! omxh264enc ! tee name=t   t. ! queue  ! rtph264pay ! \
+udpsink host=127.0.0.1 port=5000   t.  ! queue ! h264parse ! avimux ! filesink location=output.avi
+
+
+ 13)  >>gst-launch-1.0 -e   v4l2src device=/dev/video0 ! videoconvert !\
+ video/x-raw, format=YUY2, width=1280,height=720,framerate=30/1  ! videoconvert\
+ ! videorate ! omxh264enc ! tee name=t   t. ! queue ! h264parse   ! rtph264pay ! \
+udpsink host=127.0.0.1 port=5000   t.  ! queue ! h264parse ! avimux ! filesink location=output.avi
+     
+
+	//note:this implementation dosent work for mp4 video /# for mp4 avimux->mp4mux and output.avi->output.mp4
+
+to save and transmit using udp
+14)   >> gst-launch-1.0 -e  v4l2src device=/dev/video0 \
+	! videoconvert ! video/x-raw, format=YUY2, width=1280,height=720,framerate=30/1 \
+	 ! videoconvert ! videorate ! omxh264enc ! tee name=t   t. ! queue  ! rtph264pay !\
+	 udpsink host=127.0.0.1 port=5000   t.  ! filesink location = out1.mp4
+
+
+//to decode file
+
+15) >>gst-launch-1.0 filesrc location=out1.mp4 ! h264parse ! avdec_h264 ! videoconvert ! autovideosink 
+
+
+//rtmp
+
+RTMP sender:
+16)  >>gst-launch-1.0 -e v4l2src device=/dev/video0 ! video/x-raw,width=640,height=480 !       videoconvert ! omxh264enc ! h264parse ! flvmux ! rtmpsink location="rtmp://192.168.1.11:8080/live/stream" sync=false
+
+RTMP reciever:
+17) >>gst-launch-1.0 rtmpsrc location="rtmp://192.168.1.11:8080/live/stream" ! flvdemux !     h264parse ! avdec_h264 ! videoconvert ! autovideosink
+
+Here  live is the name of application and stream is the name of stream sent by the reciever
+
+Note: RTMP uses TCP and not UDP. The previous implementation were using RTP protocls which used  UDP protocol
+
+RTMP sender where sending and saving takes place simultaneousy
+18)>>gst-launch-1.0 -e  v4l2src device=/dev/video0  ! video/x-raw , width=1280,height=720, framerate=30/1  ! videoconvert  ! omxh264enc ! tee name=t   t.  ! queue ! h264parse ! avimux ! filesink location = "/home/pi/newout.avi"  t.  ! h264parse ! flvmux ! rtmpsink location="rtmp://192.168.1.11:8080/live/stream" sync=false
+
+
+RTMP reciever where rtp is converted to rtmp (not working)
+18) >>gst-launch-1.0 -v udpsrc address=192.168.1.11 port=5000 ! application/x-rtp,media=video,encoding-name=H264,clock-rate=90000  ! rtpjitterbuffer latency=50 ! rtph264depay ! h264parse ! video/x-h264,profile=baseline ! queue ! flvmux ! rtmpsink location='rtmp://192.168.1.11:8080/live/stream' sync=false
+
+19) >>gst-launch-1.0 -v udpsrc port=5000 caps="application/x-rtp" ! rtpjitterbuffer latency=50 ! rtph264depay ! h264parse ! video/x-h264,profile=baseline ! queue ! flvmux ! rtmpsink location='rtmp://localhost/live/stream'
+
+
+
+
+

@@ -4,11 +4,17 @@
 This shows the properties of the file
 
 
+
 launch:
  2)>>gst-launch-1.0 -v filesrc location=/home/pi/software/testcamera/James_small.mp4 ! queue ! qtdemux name=demuxer demuxer.video_0 ! queue ! decodebin ! videoconvert ! autovideosink demuxer.audio_0 ! queue ! decodebin ! audioconvert ! autoaudiosink
  
 This intializes a pipeline in gstreamer
- 	
+ 
+ To test the camera using gstreamer and displaying the video to verify it,use the below command
+ 
+ >>gst-launch-1.0 -v  v4l2src device=/dev/video2 ! video/x-raw,width=640,height=480 !  videoconvert ! autovideosink
+
+ 
  	
 3)>>gst-launch-1.0 audiotestsrc ! audioconvert ! autoaudiosink videotestsrc! videoconvert! autovideosink
         
